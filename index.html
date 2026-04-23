@@ -440,6 +440,46 @@ body { display:flex; flex-direction:column; }
 .bb-info { font-size:10px; color:var(--text3); }
 .hidden { display:none !important; }
 
+/* ── MOOD BAR ─────────────────────────────────── */
+.mood-bar-wrap { margin:12px 16px 0; }
+.mood-bar-label { font-size:10px; font-weight:500; color:var(--text3); letter-spacing:0.4px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center; }
+.mood-bar-label span:last-child { font-weight:600; }
+.mood-bar { height:5px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden; }
+.mood-bar-fill { height:100%; border-radius:3px; transition:width 1s cubic-bezier(0.4,0,0.2,1), background 1s; }
+
+/* ── BUDGET ─────────────────────────────────── */
+.budget-strip { display:flex; align-items:center; gap:5px; }
+.budget-bar-mini { width:36px; height:3px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; flex-shrink:0; }
+.budget-bar-mini-fill { height:100%; background:var(--yellow); border-radius:2px; transition:width 0.7s cubic-bezier(0.4,0,0.2,1); }
+.budget-val { font-size:10px; font-weight:600; color:var(--yellow); }
+.budget-crit { color:var(--red) !important; }
+.budget-bar-mini-fill.budget-crit { background:var(--red) !important; }
+
+/* ── CHOICE FLASH ─────────────────────────────────── */
+.choice.selecting { background:rgba(10,132,255,0.1) !important; border-color:rgba(10,132,255,0.5) !important; transform:scale(0.98) translateX(0) !important; }
+
+/* ── CRISIS MODAL ─────────────────────────────────── */
+#crisisModal {
+  position:fixed; inset:0; z-index:9500;
+  display:flex; align-items:flex-end; justify-content:center;
+  padding:16px; pointer-events:none;
+  background:rgba(0,0,0,0); transition:background 0.35s;
+}
+#crisisModal.on { pointer-events:all; background:rgba(0,0,0,0.55); }
+.crisis-modal-card {
+  background:rgba(14,6,6,0.97); border:1px solid rgba(255,69,58,0.45);
+  border-radius:var(--radius); padding:20px; width:100%; max-width:440px;
+  transform:translateY(150px); transition:transform 0.42s cubic-bezier(0.34,1.56,0.64,1);
+  backdrop-filter:blur(20px); margin-bottom:calc(var(--tab-h) + 8px);
+}
+#crisisModal.on .crisis-modal-card { transform:translateY(0); }
+.cm-eyebrow { font-size:10px; font-weight:700; color:var(--red); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; }
+.cm-title { font-family:var(--fd); font-size:22px; color:var(--text); margin-bottom:8px; letter-spacing:-0.3px; }
+.cm-desc { font-size:13px; color:var(--text2); line-height:1.65; margin-bottom:14px; }
+.cm-impacts { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+.cm-btn { width:100%; background:var(--red); color:#fff; border:none; border-radius:var(--radius-s); padding:14px; font-size:14px; font-weight:600; font-family:var(--fs); cursor:pointer; transition:opacity 0.18s; }
+.cm-btn:active { opacity:0.72; }
+
 /* ── API KEY MODAL ─────────────────────────────────── */
 #apikeyModal {
   position:fixed; inset:0; background:rgba(10,10,15,0.97); z-index:10000;
@@ -554,6 +594,10 @@ body { display:flex; flex-direction:column; }
     <div class="bbs bbs-l" id="bsl">LOG 5</div>
     <div class="bbs bbs-a" id="bsa">AUT 5</div>
   </div>
+  <div class="budget-strip">
+    <div class="budget-bar-mini"><div class="budget-bar-mini-fill" id="budgetFill" style="width:100%"></div></div>
+    <div class="budget-val" id="budgetVal">100M€</div>
+  </div>
   <div class="bb-info" id="bbinfo">2.847.293 occupati</div>
 </div>
 
@@ -583,6 +627,12 @@ body { display:flex; flex-direction:column; }
         <div class="sit-quote" id="npcQuote">Scegli il tuo ruolo. La città non aspetta.</div>
         <div class="sit-context" id="sitContext"></div>
       </div>
+    </div>
+
+    <!-- Mood Bar -->
+    <div class="mood-bar-wrap">
+      <div class="mood-bar-label"><span>UMORE CITTÀ</span><span id="moodLabel">Malcontento diffuso</span></div>
+      <div class="mood-bar"><div class="mood-bar-fill" id="moodFill" style="width:32%;background:var(--orange)"></div></div>
     </div>
 
     <!-- Quick Stats -->
@@ -715,6 +765,17 @@ body { display:flex; flex-direction:column; }
   </div>
 </div>
 
+<!-- CRISIS MODAL -->
+<div id="crisisModal">
+  <div class="crisis-modal-card">
+    <div class="cm-eyebrow">⚡ Evento critico</div>
+    <div class="cm-title" id="cmTitle"></div>
+    <div class="cm-desc" id="cmDesc"></div>
+    <div class="cm-impacts" id="cmImpacts"></div>
+    <button class="cm-btn" onclick="closeCrisisModal()">Ho capito — continua</button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -724,6 +785,7 @@ body { display:flex; flex-direction:column; }
 // ════════════════════════════════════════════════════════
 const G = {
   role: null, turn: 0, busy: false,
+  budget: 100, crisisCountdown: 3,
   scores: { empatia:5, logica:5, autorita:5 },
   promises: [], events: [],
   stats: { choices:0, crises:0, populist:0, start:Date.now() },
@@ -1079,13 +1141,101 @@ function checkAchs(){
 }
 
 // ════════════════════════════════════════════════════════
+// CASCADE EFFECTS — parametri si influenzano a vicenda
+// ════════════════════════════════════════════════════════
+function applyCascade(){
+  const p=G.params, cl=(v)=>Math.max(0,Math.min(100,v));
+  if(p.crime.v>65){ p.trust.v=cl(p.trust.v-(p.crime.v-65)*0.05); p.socialCoh.v=cl(p.socialCoh.v-(p.crime.v-65)*0.03); }
+  if(p.pollution.v>50){ p.health.v=cl(p.health.v-(p.pollution.v-50)*0.04); }
+  if(p.unemployment.v>20){ p.crime.v=cl(p.crime.v+(p.unemployment.v-20)*0.04); p.consensus.v=cl(p.consensus.v-(p.unemployment.v-20)*0.03); }
+  if(p.gdp.v<40){ p.unemployment.v=cl(p.unemployment.v+(40-p.gdp.v)*0.04); }
+  if(p.corruption.v>50){ p.trust.v=cl(p.trust.v-(p.corruption.v-50)*0.04); p.gdp.v=cl(p.gdp.v-(p.corruption.v-50)*0.02); }
+  if(p.housing.v<40){ p.socialCoh.v=cl(p.socialCoh.v-(40-p.housing.v)*0.03); p.migration.v=cl(p.migration.v+(40-p.housing.v)*0.02); }
+  if(p.inequality.v>60){ p.consensus.v=cl(p.consensus.v-(p.inequality.v-60)*0.03); p.crime.v=cl(p.crime.v+(p.inequality.v-60)*0.02); }
+  if(p.education.v>60){ p.crime.v=cl(p.crime.v-(p.education.v-60)*0.02); }
+  // entrate fiscali dal PIL ogni turno
+  G.budget=Math.min(100,G.budget+Math.round(p.gdp.v*0.04));
+}
+
+// ════════════════════════════════════════════════════════
+// AUTO-CRISIS SYSTEM
+// ════════════════════════════════════════════════════════
+const CRISIS_POOL=[
+  {title:'Sciopero Generale',desc:'I sindacati proclamano lo sciopero. Trasporti fermi, ospedali in difficoltà. La città si ferma.',tag:'soc',impacts:{unemployment:6,gdp:-5,consensus:-4,transport:-8},cond:()=>G.params.unemployment.v>18},
+  {title:'Blackout Energetico',desc:'Un guasto alla rete lascia tre quartieri senza corrente per 36 ore. Caos totale.',tag:'env',impacts:{energy:-12,gdp:-4,crime:5},cond:()=>G.params.energy.v<60},
+  {title:'Epidemia Stagionale',desc:'Un ceppo influenzale mette in ginocchio il sistema sanitario già al limite.',tag:'soc',impacts:{health:-10,consensus:-5,gdp:-3},cond:()=>G.params.health.v<55},
+  {title:'Crollo di un Palazzo',desc:'Edificio fatiscente crolla in periferia. Quattro famiglie senza casa, tre feriti gravi.',tag:'cri',impacts:{housing:-8,trust:-7,consensus:-6},cond:()=>G.params.housing.v<35},
+  {title:'Ondata di Calore',desc:'Temperature record. I parchi bruciano, i senzatetto muoiono per strada. Stato di emergenza.',tag:'env',impacts:{pollution:6,health:-7,greenAreas:-5},cond:()=>G.params.pollution.v>55},
+  {title:'Scandalo di Corruzione',desc:'Un alto funzionario arrestato con 2 milioni in contanti. La città è in subbuglio.',tag:'pol',impacts:{trust:-12,consensus:-8,corruption:5},cond:()=>G.params.corruption.v>50},
+  {title:'Scontri tra Bande',desc:'Tre quartieri in stato di guerriglia urbana. La polizia chiede rinforzi urgenti.',tag:'cri',impacts:{crime:9,socialCoh:-6,trust:-5},cond:()=>G.params.crime.v>60},
+  {title:'Protesta Ambientale',desc:'Migliaia in piazza contro l\'inquinamento. Blocchi stradali, tre feriti negli scontri.',tag:'env',impacts:{pollution:-3,consensus:2,gdp:-4},cond:()=>G.params.pollution.v>65},
+  {title:'Fuga di Capitali',desc:'Tre grandi imprese annunciano il trasferimento fuori Metropolia. Posti di lavoro a rischio.',tag:'eco',impacts:{gdp:-10,unemployment:7,trust:-5},cond:()=>G.params.gdp.v<45},
+  {title:'Crisi Idrica',desc:'Le riserve idriche toccano il minimo storico. Razionamento immediato nei quartieri periferici.',tag:'env',impacts:{health:-8,socialCoh:-5,consensus:-6},cond:()=>G.params.greenAreas.v<25},
+];
+function checkAutocrisis(){
+  if(!G.role)return;
+  G.crisisCountdown--;
+  if(G.crisisCountdown>0)return;
+  G.crisisCountdown=3+Math.round(Math.random()*2);
+  const eligible=CRISIS_POOL.filter(c=>c.cond());
+  if(!eligible.length)return;
+  const crisis=eligible[Math.floor(Math.random()*eligible.length)];
+  Object.entries(crisis.impacts).forEach(([k,d])=>{if(G.params[k])G.params[k].v=Math.max(0,Math.min(100,G.params[k].v+d));});
+  G.stats.crises++;
+  showCrisisModal(crisis);
+  const impArr=Object.entries(crisis.impacts).slice(0,3).map(([k,v])=>({label:G.params[k]?.label||k,v}));
+  addFeed('⚡ '+crisis.title,crisis.desc,crisis.tag,'crit',impArr);
+  addLog('Crisi: '+crisis.title,'var(--red)');
+  updateQuickStats(); updateMoodBar(); renderParams();
+}
+function showCrisisModal(crisis){
+  const m=document.getElementById('crisisModal');
+  const impH=Object.entries(crisis.impacts).slice(0,3).map(([k,v])=>{
+    const p=G.params[k]; if(!p)return '';
+    const bad=(v>0&&p.inv)||(v<0&&!p.inv);
+    return `<div class="impact-tag ${bad?'it-dn':'it-up'}">${v>0?'▲':'▼'} ${p.label}</div>`;
+  }).join('');
+  document.getElementById('cmTitle').textContent=crisis.title;
+  document.getElementById('cmDesc').textContent=crisis.desc;
+  document.getElementById('cmImpacts').innerHTML=impH;
+  m.classList.add('on');
+}
+function closeCrisisModal(){ document.getElementById('crisisModal').classList.remove('on'); }
+
+// ════════════════════════════════════════════════════════
+// BUDGET
+// ════════════════════════════════════════════════════════
+function updateBudget(cost){
+  G.budget=Math.max(0,G.budget-cost);
+  const fill=document.getElementById('budgetFill');
+  const val=document.getElementById('budgetVal');
+  const isLow=G.budget<20;
+  if(fill){fill.style.width=G.budget+'%';fill.classList.toggle('budget-crit',isLow);}
+  if(val){val.textContent=G.budget+'M\u20ac';val.classList.toggle('budget-crit',isLow);}
+  if(G.budget===0){showToast('\u{1F4B8} Bancarotta! Budget esaurito.','bad');}
+}
+
+// ════════════════════════════════════════════════════════
+// MOOD BAR
+// ════════════════════════════════════════════════════════
+function updateMoodBar(){
+  const cons=G.params.consensus.v;
+  const fill=document.getElementById('moodFill');
+  const lbl=document.getElementById('moodLabel');
+  if(!fill)return;
+  const col=cons<20?'var(--red)':cons<35?'var(--orange)':cons<50?'var(--yellow)':cons<70?'#7ecb7e':'var(--green)';
+  fill.style.width=cons+'%'; fill.style.background=col;
+  if(lbl)lbl.textContent=cons<20?'Rivolta imminente':cons<35?'Malcontento profondo':cons<50?'Sfiducia diffusa':cons<70?'Accettazione tiepida':'Consenso ampio';
+}
+
+// ════════════════════════════════════════════════════════
 // CHOICES — NEUTRAL (no risk labels, no colors)
 // ════════════════════════════════════════════════════════
 function renderChoices(choices){
   const letters=['A','B','C','D'];
   document.getElementById('choicesList').innerHTML=choices.map((c,i)=>{
     const d=encodeURIComponent(JSON.stringify(c));
-    return `<div class="choice" onclick="onChoice('${d}')">
+    return `<div class="choice" onclick="onChoice(this,'${d}')">
       <div class="choice-letter">${letters[i]||c.id}</div>
       <div class="choice-text">
         <div class="choice-label">${c.label}</div>
@@ -1226,6 +1376,9 @@ function applyResult(r){
   Object.keys(G.params).forEach(k=>G.prev[k]=Math.round(G.params[k].v));
   // Apply param changes from AI analysis
   if(r.paramChanges) Object.entries(r.paramChanges).forEach(([k,d])=>{if(G.params[k])G.params[k].v=Math.max(0,Math.min(100,G.params[k].v+d));});
+  applyCascade();
+  const turnCost=Math.min(20,5+Math.floor(G.turn/3)*2);
+  updateBudget(turnCost);
   if(r.npc) updateNPC(r.npc);
   if(r.scores) {G.scores=r.scores; updScores();}
   if(r.choices) renderChoices(r.choices);
@@ -1233,15 +1386,19 @@ function applyResult(r){
   if(r.cityLog) addLog(r.cityLog, r.feedType==='crit'?'var(--red)':r.feedType==='warn'?'var(--orange)':r.feedType==='good'?'var(--green)':'var(--accent)');
   if(r.feedHeadline) addFeed(r.feedHeadline, r.feedBody||'', r.feedTag||'pol', r.feedType||'info', r.impacts||[]);
   if(r.promise){G.promises.push({text:r.promise,turn:G.turn,exp:G.turn+3});updPromises();}
-  updateQuickStats(); renderParams(); renderProfile(); checkAchs(); updTopBar();
+  updateQuickStats(); updateMoodBar(); renderParams(); renderProfile(); checkAchs(); updTopBar();
   setTimeout(()=>document.querySelector('.choices-section')?.scrollIntoView({behavior:'smooth',block:'start'}),200);
 }
 
 // ════════════════════════════════════════════════════════
 // ON CHOICE
 // ════════════════════════════════════════════════════════
-async function onChoice(enc){
-  if(G.busy)return; G.busy=true;
+async function onChoice(el, enc){
+  if(G.busy)return;
+  el.classList.add('selecting');
+  await new Promise(r=>setTimeout(r,260));
+  el.classList.remove('selecting');
+  G.busy=true;
   const c=JSON.parse(decodeURIComponent(enc));
   G.turn++; G.stats.choices++;
   setLoading(true);
@@ -1254,7 +1411,8 @@ async function onChoice(enc){
       const el=document.getElementById('npcQuote');
       if(el)el.innerHTML=q+'<span class="tcur"></span>';
     });
-    applyResult(r); G.stats.crises++;
+    applyResult(r);
+    checkAutocrisis();
   }catch(e){
     if(e.message==='no_key'||e.message==='invalid_key'){G.busy=false;return;}
     console.error(e); showToast('Connessione persa','bad'); renderFallback(c.label);
