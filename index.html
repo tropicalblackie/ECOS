@@ -455,6 +455,39 @@ body { display:flex; flex-direction:column; }
 .budget-crit { color:var(--red) !important; }
 .budget-bar-mini-fill.budget-crit { background:var(--red) !important; }
 
+/* ── TREND ARROWS ───────────────────────────── */
+.param-trend { font-size:11px; font-weight:700; margin-left:2px; }
+
+/* ── PROFILE BUTTONS ────────────────────────── */
+.prof-btn { flex:1; padding:12px; border:none; border-radius:var(--radius-s); font-size:13px; font-weight:600; font-family:var(--fs); cursor:pointer; transition:opacity 0.18s; }
+.prof-btn:active { opacity:0.72; }
+.prof-btn-save { background:var(--surface2); color:var(--accent); }
+.prof-btn-new  { background:rgba(255,69,58,0.12); color:var(--red); }
+
+/* ── ENDGAME SCREEN ──────────────────────────── */
+#endgameScreen {
+  position:fixed; inset:0; z-index:9900;
+  display:flex; align-items:center; justify-content:center;
+  padding:20px; background:rgba(0,0,0,0.93);
+  backdrop-filter:blur(18px);
+  animation: egFadeIn 0.55s ease;
+}
+@keyframes egFadeIn { from{opacity:0;transform:scale(0.96)} to{opacity:1;transform:scale(1)} }
+.eg-card { text-align:center; max-width:400px; width:100%; padding-bottom:32px; }
+.eg-emoji { font-size:80px; margin-bottom:14px; display:block; animation: egBounce 0.75s ease 0.25s both; }
+@keyframes egBounce { from{transform:scale(0) rotate(-12deg)} 60%{transform:scale(1.18) rotate(3deg)} to{transform:scale(1) rotate(0)} }
+.eg-title { font-family:var(--fd); font-size:38px; font-weight:800; letter-spacing:-1px; margin-bottom:10px; }
+#endgameScreen.eg-win .eg-title { color:var(--green); }
+#endgameScreen.eg-lose .eg-title { color:var(--red); }
+.eg-reason { font-size:14px; color:var(--text2); line-height:1.65; margin-bottom:6px; max-width:300px; margin-left:auto; margin-right:auto; }
+.eg-turn { font-size:11px; color:var(--text3); margin-bottom:22px; letter-spacing:0.5px; }
+.eg-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:26px; }
+.eg-stat { background:rgba(255,255,255,0.05); border-radius:var(--radius-s); padding:10px 6px; }
+.eg-sv { font-family:var(--fd); font-size:22px; color:var(--text); margin-bottom:3px; }
+.eg-sk { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.4px; }
+.eg-btn { background:var(--accent); color:#fff; border:none; border-radius:var(--radius-s); padding:15px 44px; font-size:15px; font-weight:600; font-family:var(--fs); cursor:pointer; transition:opacity 0.18s; }
+.eg-btn:active { opacity:0.72; }
+
 /* ── CHOICE FLASH ─────────────────────────────────── */
 .choice.selecting { background:rgba(10,132,255,0.1) !important; border-color:rgba(10,132,255,0.5) !important; transform:scale(0.98) translateX(0) !important; }
 
@@ -765,6 +798,18 @@ body { display:flex; flex-direction:column; }
   </div>
 </div>
 
+<!-- ENDGAME SCREEN -->
+<div id="endgameScreen" class="hidden">
+  <div class="eg-card">
+    <span class="eg-emoji" id="eg-emoji">💀</span>
+    <div class="eg-title" id="eg-title">GAME OVER</div>
+    <div class="eg-reason" id="eg-reason"></div>
+    <div class="eg-turn" id="eg-turn"></div>
+    <div class="eg-stats" id="eg-stats"></div>
+    <button class="eg-btn" onclick="newGame()">Nuova Partita</button>
+  </div>
+</div>
+
 <!-- CRISIS MODAL -->
 <div id="crisisModal">
   <div class="crisis-modal-card">
@@ -789,7 +834,7 @@ const G = {
   scores: { empatia:5, logica:5, autorita:5 },
   promises: [], events: [],
   stats: { choices:0, crises:0, populist:0, start:Date.now() },
-  prev: {},
+  prev: {}, history: [], npcRels: {}, trends: {},
   params: {
     consensus:   {v:32, label:'Consenso Popolare',   icon:'🗳', color:'var(--purple)', inv:false, desc:'Supporto dei cittadini al governo'},
     inequality:  {v:78, label:'Disuguaglianza',       icon:'⚖️', color:'var(--red)',    inv:true,  desc:'Divario tra classi sociali (Gini)'},
@@ -1031,7 +1076,7 @@ function renderParams(){
           <div class="param-foot">
             <div class="param-val" style="color:${fill}">${v}</div>
             <div class="param-status">${status} — ${p.desc}</div>
-            ${deltaH}
+            ${deltaH}${tArrow}
           </div>
         </div>
       </div>`;
@@ -1127,7 +1172,14 @@ function renderProfile(){
   </div>
   <div class="section-card">
     <div class="section-header"><div class="section-title">Statistiche di partita</div></div>
-    ${[['Turni completati',G.turn],['Scelte effettuate',G.stats.choices],['Crisi superate',G.stats.crises],['Tempo di gioco',timeStr],['PIL attuale',Math.round(G.params.gdp.v)+'/100'],['Consenso',Math.round(G.params.consensus.v)+'/100']].map(([k,v])=>`<div class="stat-list-item"><div class="sli-key">${k}</div><div class="sli-val">${v}</div></div>`).join('')}
+    ${[['Turni completati',G.turn],['Scelte effettuate',G.stats.choices],['Crisi superate',G.stats.crises],['Tempo di gioco',timeStr],['PIL attuale',Math.round(G.params.gdp.v)+'/100'],['Consenso',Math.round(G.params.consensus.v)+'/100'],['Budget',G.budget+'M€']].map(([k,v])=>`<div class="stat-list-item"><div class="sli-key">${k}</div><div class="sli-val">${v}</div></div>`).join('')}
+  </div>
+  <div class="section-card">
+    <div class="section-header"><div class="section-title">Partita</div></div>
+    <div style="display:flex;gap:10px">
+      <button class="prof-btn prof-btn-save" onclick="saveGame(true)">💾 Salva manuale</button>
+      <button class="prof-btn prof-btn-new" onclick="newGame()">🔄 Nuova Partita</button>
+    </div>
   </div>`;
 }
 
@@ -1138,6 +1190,97 @@ function checkAchs(){
   Object.values(G.achs).forEach(a=>{
     if(!a.ul&&a.cond()){a.ul=true;showToast('🏆 '+a.name,'good');}
   });
+}
+
+// ════════════════════════════════════════════════════════
+// MULTI-TURN HISTORY
+// ════════════════════════════════════════════════════════
+function pushHistory(choiceLabel){
+  G.history.push({turn:G.turn, choice:choiceLabel, headline:''});
+  if(G.history.length>5) G.history.shift();
+}
+
+// ════════════════════════════════════════════════════════
+// NPC RELATIONSHIP TRACKING
+// ════════════════════════════════════════════════════════
+function updateNPCRel(npc){
+  if(!npc||!npc.name)return;
+  if(!G.npcRels[npc.name]) G.npcRels[npc.name]={trust:0,interactions:0};
+  const rel=G.npcRels[npc.name];
+  rel.interactions++;
+  const moodDelta={angry:-1,worried:-0.5,cynical:-0.5,neutral:0,hopeful:1};
+  rel.trust=Math.max(-10,Math.min(10,(rel.trust+(moodDelta[npc.mood]||0))));
+}
+
+// ════════════════════════════════════════════════════════
+// TREND TRACKING
+// ════════════════════════════════════════════════════════
+function updateTrends(){
+  Object.keys(G.params).forEach(k=>{
+    if(!G.trends[k])G.trends[k]=[];
+    G.trends[k].push(Math.round(G.params[k].v));
+    if(G.trends[k].length>8)G.trends[k].shift();
+  });
+}
+
+// ════════════════════════════════════════════════════════
+// SAVE / LOAD
+// ════════════════════════════════════════════════════════
+function saveGame(toast){
+  const d={
+    role:G.role,turn:G.turn,budget:G.budget,crisisCountdown:G.crisisCountdown,
+    scores:G.scores,promises:G.promises,events:G.events.slice(0,20),
+    stats:G.stats,prev:G.prev,
+    params:Object.fromEntries(Object.entries(G.params).map(([k,p])=>[k,p.v])),
+    achs:Object.fromEntries(Object.entries(G.achs).map(([k,a])=>[k,a.ul])),
+    history:G.history,npcRels:G.npcRels,trends:G.trends,
+  };
+  localStorage.setItem('ecos_save',JSON.stringify(d));
+  if(toast)showToast('💾 Partita salvata','good');
+}
+function loadGame(){
+  const raw=localStorage.getItem('ecos_save'); if(!raw)return false;
+  try{
+    const d=JSON.parse(raw);
+    G.role=d.role; G.turn=d.turn; G.budget=d.budget??100; G.crisisCountdown=d.crisisCountdown??3;
+    G.scores=d.scores; G.promises=d.promises||[]; G.events=d.events||[];
+    G.stats=d.stats; G.prev=d.prev||{};
+    if(d.params)Object.entries(d.params).forEach(([k,v])=>{if(G.params[k])G.params[k].v=v;});
+    if(d.achs)Object.entries(d.achs).forEach(([k,ul])=>{if(G.achs[k])G.achs[k].ul=ul;});
+    G.history=d.history||[]; G.npcRels=d.npcRels||{}; G.trends=d.trends||{};
+    return true;
+  }catch(e){return false;}
+}
+function newGame(){
+  if(!confirm('Iniziare una nuova partita? I progressi attuali andranno persi.'))return;
+  localStorage.removeItem('ecos_save'); location.reload();
+}
+
+// ════════════════════════════════════════════════════════
+// ENDGAME
+// ════════════════════════════════════════════════════════
+function checkEndgame(){
+  if(!G.role||G.turn<2)return;
+  const p=G.params;
+  if(G.budget<=0){showEndgame('lose','Il bilancio è esaurito. Metropolia è in bancarotta.');return;}
+  if(p.consensus.v<=3){showEndgame('lose','Il popolo si è ribellato. Sei stato deposto con forza.');return;}
+  if(p.trust.v<=3&&p.gdp.v<=15){showEndgame('lose','Crollo istituzionale totale. La città è ingovernabile.');return;}
+  if(G.turn>=15&&p.consensus.v>=65&&p.gdp.v>=65&&p.pollution.v<=50){showEndgame('win','Metropolia è risorta. La tua leadership passerà alla storia.');}
+}
+function showEndgame(type,reason){
+  const isWin=type==='win';
+  document.getElementById('eg-emoji').textContent=isWin?'🏆':'💀';
+  document.getElementById('eg-title').textContent=isWin?'METROPOLIA SALVATA':'GAME OVER';
+  document.getElementById('eg-reason').textContent=reason;
+  document.getElementById('eg-turn').textContent='Turno '+G.turn+' · E:'+G.scores.empatia+' L:'+G.scores.logica+' A:'+G.scores.autorita;
+  document.getElementById('eg-stats').innerHTML=[
+    ['Consenso',Math.round(G.params.consensus.v)],['PIL',Math.round(G.params.gdp.v)],
+    ['Criminalità',Math.round(G.params.crime.v)],['Budget',G.budget+'M€'],
+    ['Scelte',G.stats.choices],['Crisi',G.stats.crises]
+  ].map(([k,v])=>`<div class="eg-stat"><div class="eg-sv">${v}</div><div class="eg-sk">${k}</div></div>`).join('');
+  const scr=document.getElementById('endgameScreen');
+  scr.className=(isWin?'eg-win':'eg-lose');
+  G.busy=true; localStorage.removeItem('ecos_save');
 }
 
 // ════════════════════════════════════════════════════════
@@ -1304,6 +1447,8 @@ async function callClaude(prompt, onQuoteChunk){
   const key=getApiKey();
   if(!key){ showApiKeyModal(null); throw new Error('no_key'); }
   const snap=JSON.stringify(Object.fromEntries(Object.entries(G.params).map(([k,p])=>[k,Math.round(p.v)])));
+  const histCtx=G.history.map(h=>`T${h.turn}:"${h.choice}"${h.headline?` → ${h.headline}`:''}`).join(' | ')||'nessuna';
+  const relCtx=Object.entries(G.npcRels).map(([n,r])=>`${n}(fiducia:${r.trust>0?'+':''}${Math.round(r.trust)})`).join(', ')||'nessuna';
   const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({
     model:'claude-sonnet-4-20250514',max_tokens:1200,stream:true,
     system:`Sei il Regista del Caos di ECOS — simulatore iper-realistico di ecosistema urbano. Rispondi SOLO in JSON valido. ZERO testo fuori dal JSON.
@@ -1315,6 +1460,8 @@ CONTESTO:
 - Parametri attuali (0-100): ${snap}
 - Promesse attive: ${JSON.stringify(G.promises.filter(p=>p.exp>=G.turn).map(p=>p.text))}
 - Ultimi 3 eventi: ${G.events.slice(0,3).map(e=>e.headline).join(' | ')||'nessuno'}
+- Ultime 5 decisioni: ${histCtx}
+- Relazioni PNG: ${relCtx}
 
 REGOLE ASSOLUTE:
 1. PNG: scegli tra Marco Rossi (giornalista investigativo, cinico), Vera Santoro (sindacalista operaia, diretta), Leone Marchetti (CEO immobiliare, spregiudicato), Commissario Falco (capo polizia, pragmatico), Dr. Gabriele Mori (direttore ospedale, esausto), Elena Conti (attivista ambientale, feroce), Prof. Amadei (economista, sarcastico), Angela Ricci (leader comitato quartiere, disperata). VARIA ogni turno. Il PNG deve essere COERENTE con la situazione attuale dei parametri.
@@ -1373,13 +1520,14 @@ JSON ESATTO:
 // APPLY RESULT
 // ════════════════════════════════════════════════════════
 function applyResult(r){
+  updateTrends();
   Object.keys(G.params).forEach(k=>G.prev[k]=Math.round(G.params[k].v));
   // Apply param changes from AI analysis
   if(r.paramChanges) Object.entries(r.paramChanges).forEach(([k,d])=>{if(G.params[k])G.params[k].v=Math.max(0,Math.min(100,G.params[k].v+d));});
   applyCascade();
   const turnCost=Math.min(20,5+Math.floor(G.turn/3)*2);
   updateBudget(turnCost);
-  if(r.npc) updateNPC(r.npc);
+  if(r.npc){updateNPC(r.npc);updateNPCRel(r.npc);}
   if(r.scores) {G.scores=r.scores; updScores();}
   if(r.choices) renderChoices(r.choices);
   if(r.crisis) document.getElementById('crisisText').textContent=r.crisis;
@@ -1387,6 +1535,7 @@ function applyResult(r){
   if(r.feedHeadline) addFeed(r.feedHeadline, r.feedBody||'', r.feedTag||'pol', r.feedType||'info', r.impacts||[]);
   if(r.promise){G.promises.push({text:r.promise,turn:G.turn,exp:G.turn+3});updPromises();}
   updateQuickStats(); updateMoodBar(); renderParams(); renderProfile(); checkAchs(); updTopBar();
+  saveGame(); checkEndgame();
   setTimeout(()=>document.querySelector('.choices-section')?.scrollIntoView({behavior:'smooth',block:'start'}),200);
 }
 
@@ -1401,17 +1550,20 @@ async function onChoice(el, enc){
   G.busy=true;
   const c=JSON.parse(decodeURIComponent(enc));
   G.turn++; G.stats.choices++;
+  pushHistory(c.label);
   setLoading(true);
   document.getElementById('turnPill').textContent='T-'+G.turn;
   const qEl=document.getElementById('npcQuote');
   if(qEl)qEl.innerHTML='<span class="tcur"></span>';
-  const prompt=`Turno ${G.turn}. ${G.role==='mayor'?'Il Sindaco':'Il CEO'} ha appena scelto: "${c.label}". Genera le conseguenze realistiche: un nuovo PNG diverso dal precedente che reagisce coerentemente a questa scelta, 4 nuove scelte neutrali per il prossimo turno, e gli effetti sulla città.`;
+  const npcRelCtx=Object.keys(G.npcRels).length?` I PNG con cui hai interagito ricordano come li hai trattati.`:'';
+  const prompt=`Turno ${G.turn}. ${G.role==='mayor'?'Il Sindaco':'Il CEO'} ha appena scelto: "${c.label}".${npcRelCtx} Genera le conseguenze realistiche: un nuovo PNG diverso dal precedente che reagisce coerentemente a questa scelta, 4 nuove scelte neutrali per il prossimo turno, e gli effetti sulla città.`;
   try{
     const r=await callClaude(prompt,(q)=>{
       const el=document.getElementById('npcQuote');
       if(el)el.innerHTML=q+'<span class="tcur"></span>';
     });
     applyResult(r);
+    if(G.history.length>0&&r.feedHeadline)G.history[G.history.length-1].headline=r.feedHeadline;
     checkAutocrisis();
   }catch(e){
     if(e.message==='no_key'||e.message==='invalid_key'){G.busy=false;return;}
@@ -1523,13 +1675,27 @@ async function boot(){
   const lo=document.getElementById('loading'); lo.style.opacity='0';
   await new Promise(r=>setTimeout(r,500)); lo.classList.add('hidden');
   if(!getApiKey()){
-    showApiKeyModal(()=>{ document.getElementById('rolesel').classList.remove('hidden'); });
+    showApiKeyModal(()=>{
+      const hasSave=loadGame();
+      if(hasSave&&G.role){restoreGame();}
+      else{document.getElementById('rolesel').classList.remove('hidden');}
+    });
   } else {
-    document.getElementById('rolesel').classList.remove('hidden');
+    const hasSave=loadGame();
+    if(hasSave&&G.role){restoreGame();}
+    else{document.getElementById('rolesel').classList.remove('hidden');}
   }
   // Init diorama background
   const cv=document.getElementById('diorama'); cv.width=cv.offsetWidth||380;
   initDiorama(); renderParams(); updScores(); updTopBar();
+}
+function restoreGame(){
+  document.getElementById('rolesel').classList.add('hidden');
+  const rp=document.getElementById('rolePill');
+  rp.textContent=G.role==='mayor'?'Sindaco':'CEO';
+  rp.className='role-pill '+(G.role==='mayor'?'rp-may':'rp-ceo');
+  updateBudget(0); updateMoodBar(); updateQuickStats(); renderParams(); renderProfile(); updScores(); updTopBar(); updPromises();
+  showToast('Partita caricata — Turno '+G.turn,'good');
 }
 boot();
 </script>
