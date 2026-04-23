@@ -513,70 +513,10 @@ body { display:flex; flex-direction:column; }
 .cm-btn { width:100%; background:var(--red); color:#fff; border:none; border-radius:var(--radius-s); padding:14px; font-size:14px; font-weight:600; font-family:var(--fs); cursor:pointer; transition:opacity 0.18s; }
 .cm-btn:active { opacity:0.72; }
 
-/* ── API KEY MODAL ─────────────────────────────────── */
-#apikeyModal {
-  position:fixed; inset:0; background:rgba(10,10,15,0.97); z-index:10000;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:28px; gap:16px; backdrop-filter:blur(20px);
-}
-.ak-logo { font-family:var(--fd); font-size:40px; color:var(--text); letter-spacing:-1px; }
-.ak-eyebrow { font-size:11px; color:var(--text3); letter-spacing:2px; font-weight:500; text-transform:uppercase; }
-.ak-title { font-size:20px; font-weight:600; color:var(--text); text-align:center; margin-top:-4px; }
-.ak-desc { font-size:13px; color:var(--text2); text-align:center; line-height:1.6; max-width:300px; }
-.ak-form { width:100%; max-width:340px; display:flex; flex-direction:column; gap:10px; margin-top:6px; }
-.ak-input-wrap {
-  position:relative; display:flex; align-items:center;
-  background:var(--surface2); border:1px solid var(--border2);
-  border-radius:var(--radius-s); overflow:hidden;
-  transition: border-color 0.2s;
-}
-.ak-input-wrap:focus-within { border-color:var(--accent); }
-.ak-input {
-  flex:1; background:transparent; border:none; outline:none;
-  padding:14px 44px 14px 16px; font-size:13px; color:var(--text);
-  font-family:var(--fs); letter-spacing:0.5px;
-}
-.ak-input::placeholder { color:var(--text3); }
-.ak-eye {
-  position:absolute; right:12px; font-size:15px; cursor:pointer;
-  color:var(--text3); user-select:none; padding:4px; line-height:1;
-}
-.ak-save {
-  background:var(--accent); color:#fff; border:none; border-radius:var(--radius-s);
-  padding:14px; font-size:14px; font-weight:600; font-family:var(--fs);
-  cursor:pointer; transition:opacity 0.2s;
-}
-.ak-save:hover { opacity:0.85; }
-.ak-save:active { opacity:0.65; transform:scale(0.99); }
-.ak-note { font-size:11px; color:var(--text3); text-align:center; line-height:1.6; }
-.ak-note a { color:var(--accent); text-decoration:none; }
-.topbar-key {
-  width:30px; height:30px; border-radius:50%;
-  background:var(--surface); border:1px solid var(--border);
-  display:flex; align-items:center; justify-content:center;
-  cursor:pointer; font-size:13px; transition:all 0.2s;
-  flex-shrink:0;
-}
-.topbar-key:hover { background:var(--surface2); border-color:var(--border2); }
+/* ── API KEY MODAL — rimosso, AI pubblica ───────── */
 </style>
 </head>
 <body>
-
-<!-- API KEY MODAL -->
-<div id="apikeyModal" class="hidden">
-  <div class="ak-logo">ECOS</div>
-  <div class="ak-eyebrow">Configurazione</div>
-  <div class="ak-title">Connetti Claude AI</div>
-  <div class="ak-desc">Per giocare serve una chiave API Anthropic. Viene salvata solo nel tuo browser, non viene mai trasmessa altrove.</div>
-  <div class="ak-form">
-    <div class="ak-input-wrap">
-      <input class="ak-input" id="apikeyInput" type="password" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false">
-      <div class="ak-eye" id="apikeyEye" onclick="toggleKeyVis()">👁</div>
-    </div>
-    <button class="ak-save" id="apikeySave">Salva e inizia →</button>
-  </div>
-  <div class="ak-note">Ottieni la tua chiave gratuita su <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a></div>
-</div>
 
 <!-- LOADING -->
 <div id="loading">
@@ -616,7 +556,7 @@ body { display:flex; flex-direction:column; }
   <div class="top-right">
     <div class="turn-pill" id="turnPill">T-0</div>
     <div class="role-pill rp-none" id="rolePill">—</div>
-    <div class="topbar-key" onclick="showApiKeyModal()" title="Chiave API">🔑</div>
+
   </div>
 </div>
 
@@ -1413,25 +1353,7 @@ function updateNPC(npc){
 // ════════════════════════════════════════════════════════
 // API KEY
 // ════════════════════════════════════════════════════════
-function getApiKey(){ return localStorage.getItem('ecos_api_key')||''; }
-function setApiKey(k){ localStorage.setItem('ecos_api_key',k.trim()); }
-function toggleKeyVis(){
-  const i=document.getElementById('apikeyInput');
-  i.type=i.type==='password'?'text':'password';
-  document.getElementById('apikeyEye').textContent=i.type==='password'?'👁':'🙈';
-}
-function showApiKeyModal(onSave){
-  const m=document.getElementById('apikeyModal');
-  m.classList.remove('hidden');
-  document.getElementById('apikeyInput').value=getApiKey();
-  document.getElementById('apikeySave').onclick=()=>{
-    const k=document.getElementById('apikeyInput').value.trim();
-    if(k.length<20){showToast('Chiave API non valida','bad');return;}
-    setApiKey(k);
-    m.classList.add('hidden');
-    if(onSave) onSave();
-  };
-}
+// API key rimossa — AI pubblica Pollinations.ai
 function extractPartialQuote(text){
   const full=text.match(/"quote"\s*:\s*"((?:[^"\\]|\\.)*)"/); 
   if(full)return full[1].replace(/\\"/g,'"').replace(/\\n/g,' ').replace(/\\t/g,' ');
@@ -1441,17 +1363,13 @@ function extractPartialQuote(text){
 }
 
 // ════════════════════════════════════════════════════════
-// CLAUDE API — STREAMING
+// AI ENGINE — Pollinations.ai (gratuito, no chiave)
 // ════════════════════════════════════════════════════════
 async function callClaude(prompt, onQuoteChunk){
-  const key=getApiKey();
-  if(!key){ showApiKeyModal(null); throw new Error('no_key'); }
   const snap=JSON.stringify(Object.fromEntries(Object.entries(G.params).map(([k,p])=>[k,Math.round(p.v)])));
   const histCtx=G.history.map(h=>`T${h.turn}:"${h.choice}"${h.headline?` → ${h.headline}`:''}`).join(' | ')||'nessuna';
   const relCtx=Object.entries(G.npcRels).map(([n,r])=>`${n}(fiducia:${r.trust>0?'+':''}${Math.round(r.trust)})`).join(', ')||'nessuna';
-  const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({
-    model:'claude-sonnet-4-20250514',max_tokens:1200,stream:true,
-    system:`Sei il Regista del Caos di ECOS — simulatore iper-realistico di ecosistema urbano. Rispondi SOLO in JSON valido. ZERO testo fuori dal JSON.
+  const systemPrompt=`Sei il Regista del Caos di ECOS — simulatore iper-realistico di ecosistema urbano. Rispondi SOLO in JSON valido. ZERO testo fuori dal JSON.
 
 CONTESTO:
 - Città: Metropolia, 2.847.293 abitanti
@@ -1467,27 +1385,29 @@ REGOLE ASSOLUTE:
 1. PNG: scegli tra Marco Rossi (giornalista investigativo, cinico), Vera Santoro (sindacalista operaia, diretta), Leone Marchetti (CEO immobiliare, spregiudicato), Commissario Falco (capo polizia, pragmatico), Dr. Gabriele Mori (direttore ospedale, esausto), Elena Conti (attivista ambientale, feroce), Prof. Amadei (economista, sarcastico), Angela Ricci (leader comitato quartiere, disperata). VARIA ogni turno. Il PNG deve essere COERENTE con la situazione attuale dei parametri.
 2. avatar: emoji singola che rappresenta quel personaggio
 3. mood: angry/worried/neutral/hopeful/cynical
-4. context: array 2-3 stringhe brevi che danno contesto (es: "PIL in calo", "Criminalità +5 questo turno")
-5. quote: 2-3 frasi. DEVE essere direttamente collegata e coerente con l'ultima azione del giocatore o con la crisi attuale. Spietata, umana, mai neutrale.
-6. ESATTAMENTE 4 SCELTE: label max 6 parole. SOLO il nome dell'azione, NESSUN indicatore di rischio, NESSUN colore, NESSUN suggerimento. Il giocatore deve scoprire le conseguenze DOPO. Le scelte devono sembrare tutte plausibili.
-7. paramChanges: -18/+18. SEMPRE trade-off: migliori una cosa e peggiori un'altra. MAI scelta perfetta.
-8. feedHeadline: titolo di giornale realistico e toccante (es: "Il Sindaco taglia i sussidi: 'Scelta difficile'")
-9. feedBody: 2 frasi giornalistiche che raccontano l'impatto reale sulla città
+4. context: array 2-3 stringhe brevi che danno contesto
+5. quote: 2-3 frasi. DEVE essere direttamente collegata e coerente con l'ultima azione del giocatore. Spietata, umana, mai neutrale.
+6. ESATTAMENTE 4 SCELTE: label max 6 parole. SOLO il nome dell'azione, NESSUN indicatore di rischio.
+7. paramChanges: -18/+18. SEMPRE trade-off. MAI scelta perfetta.
+8. feedHeadline: titolo di giornale realistico e toccante
+9. feedBody: 2 frasi giornalistiche
 10. feedTag: pol/eco/soc/env/cri
-11. feedType: info/warn/crit/good — determina il colore del feed
-12. feedSource: nome testata (es: "Gazzetta di Metropolia")
-13. impacts: [{label, v}] max 3 — solo i cambiamenti più significativi
-14. crisis: 1-2 frasi su cosa succederà se non agisce
-15. cityLog: ≤7 parole per il log della città
-16. promise: null o testo promessa se il giocatore ne fa una implicita
-17. scores: aggiorna empatia/logica/autorita 1-10
+11. feedType: info/warn/crit/good
+12. impacts: [{label, v}] max 3
+13. crisis: 1-2 frasi su cosa succederà se non agisce
+14. cityLog: ≤7 parole
+15. promise: null o testo promessa implicita
+16. scores: empatia/logica/autorita 1-10
 
 JSON ESATTO:
-{"npc":{"name":"","role":"","avatar":"","quote":"","mood":"angry","context":[""]},"scores":{"empatia":5,"logica":5,"autorita":5},"choices":[{"id":"A","label":""},{"id":"B","label":""},{"id":"C","label":""},{"id":"D","label":""}],"paramChanges":{},"crisis":"","cityLog":"","feedHeadline":"","feedBody":"","feedTag":"pol","feedType":"info","impacts":[{"label":"Consenso","v":3}],"promise":null}`,
-    messages:[{role:'user',content:prompt}]
+{"npc":{"name":"","role":"","avatar":"","quote":"","mood":"angry","context":[""]},"scores":{"empatia":5,"logica":5,"autorita":5},"choices":[{"id":"A","label":""},{"id":"B","label":""},{"id":"C","label":""},{"id":"D","label":""}],"paramChanges":{},"crisis":"","cityLog":"","feedHeadline":"","feedBody":"","feedTag":"pol","feedType":"info","impacts":[{"label":"Consenso","v":3}],"promise":null}`;
+  const res=await fetch('https://text.pollinations.ai/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    messages:[{role:'system',content:systemPrompt},{role:'user',content:prompt}],
+    model:'openai-large',stream:true,jsonMode:true,
+    seed:Math.floor(Math.random()*9999)
   })});
   if(!res.ok){
-    if(res.status===401){showToast('Chiave API non valida 🔑','bad');showApiKeyModal(null);throw new Error('invalid_key');}
+    showToast('AI non raggiungibile, riprovo...','bad');
     throw new Error(res.status);
   }
   const reader=res.body.getReader();
@@ -1503,8 +1423,9 @@ JSON ESATTO:
       if(d==='[DONE]')continue;
       try{
         const ev=JSON.parse(d);
-        if(ev.type==='content_block_delta'&&ev.delta?.type==='text_delta'){
-          full+=ev.delta.text;
+        const text=ev.choices?.[0]?.delta?.content;
+        if(text){
+          full+=text;
           if(onQuoteChunk){
             const q=extractPartialQuote(full);
             if(q&&q!==lastQuote){lastQuote=q;onQuoteChunk(q);}
@@ -1513,7 +1434,9 @@ JSON ESATTO:
       }catch(e){}
     }
   }
-  return JSON.parse(full.replace(/```json|```/g,'').trim());
+  // Pollinations a volte manda JSON diretto senza SSE — gestisci entrambi
+  const raw=full.trim()||'';
+  return JSON.parse(raw.replace(/^```json|```$/g,'').trim());
 }
 
 // ════════════════════════════════════════════════════════
@@ -1566,8 +1489,7 @@ async function onChoice(el, enc){
     if(G.history.length>0&&r.feedHeadline)G.history[G.history.length-1].headline=r.feedHeadline;
     checkAutocrisis();
   }catch(e){
-    if(e.message==='no_key'||e.message==='invalid_key'){G.busy=false;return;}
-    console.error(e); showToast('Connessione persa','bad'); renderFallback(c.label);
+    console.error(e); showToast('AI non raggiungibile — riprovo tra poco','bad'); renderFallback(c.label);
   }
   G.busy=false;
 }
@@ -1590,11 +1512,9 @@ async function selectRole(role){
     });
     applyResult(r);
   }catch(e){
-    if(e.message==='no_key'||e.message==='invalid_key'){G.busy=false;return;}
     console.error(e);
-    updateNPC({name:role==='mayor'?'Marco Rossi':'Leone Marchetti',role:role==='mayor'?'Giornalista investigativo':'CEO Immobiliare',avatar:role==='mayor'?'🖊️':'💰',quote:role==='mayor'?'"Bentornato alla realtà. Metropolia brucia lentamente da tre anni. Lei ha 72 ore prima che la situazione diventi irreversibile. Le chiedo: cosa intende fare?"':'"Finalmente qualcuno con coraggio. Questa città vale quattro miliardi se gestita bene. Il problema è che nessuno finora ha avuto il fegato di farlo. Lei sì?"',mood:'angry',context:['Consenso critico: 32','Criminalità alta: 71','Inquinamento: 74']});
     renderFallback('inizio partita');
-    addFeed(`Nuovo ${role==='mayor'?'Sindaco':'CEO'} per Metropolia`,'Una città in emergenza accoglie il suo nuovo leader. Le aspettative sono alte, la situazione drammatica.','pol','warn',[{label:'Consenso',v:3}]);
+    addFeed(`Nuovo ${role==='mayor'?'Sindaco':'CEO'} per Metropolia`,'Una città in emergenza accoglie il suo nuovo leader.','pol','warn',[{label:'Consenso',v:3}]);
     addLog('Nuovo governo. La città osserva.','var(--accent)');
   }
   G.busy=false;
@@ -1674,17 +1594,9 @@ async function boot(){
   await new Promise(r=>setTimeout(r,200));
   const lo=document.getElementById('loading'); lo.style.opacity='0';
   await new Promise(r=>setTimeout(r,500)); lo.classList.add('hidden');
-  if(!getApiKey()){
-    showApiKeyModal(()=>{
-      const hasSave=loadGame();
-      if(hasSave&&G.role){restoreGame();}
-      else{document.getElementById('rolesel').classList.remove('hidden');}
-    });
-  } else {
-    const hasSave=loadGame();
-    if(hasSave&&G.role){restoreGame();}
-    else{document.getElementById('rolesel').classList.remove('hidden');}
-  }
+  const hasSave=loadGame();
+  if(hasSave&&G.role){restoreGame();}
+  else{document.getElementById('rolesel').classList.remove('hidden');}
   // Init diorama background
   const cv=document.getElementById('diorama'); cv.width=cv.offsetWidth||380;
   initDiorama(); renderParams(); updScores(); updTopBar();
