@@ -488,43 +488,6 @@ body { display:flex; flex-direction:column; }
 .eg-btn { background:var(--accent); color:#fff; border:none; border-radius:var(--radius-s); padding:15px 44px; font-size:15px; font-weight:600; font-family:var(--fs); cursor:pointer; transition:opacity 0.18s; }
 .eg-btn:active { opacity:0.72; }
 
-/* ── API KEY MODAL ───────────────────────────── */
-#groqModal {
-  position:fixed; inset:0; background:rgba(6,8,15,0.98); z-index:10000;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:28px; gap:14px; backdrop-filter:blur(24px);
-}
-#groqModal.hidden { display:none; }
-.gm-logo { font-family:var(--fd); font-size:44px; color:var(--text); letter-spacing:-1.5px; }
-.gm-badge { background:rgba(48,209,88,0.15); color:var(--green); border:1px solid rgba(48,209,88,0.3); border-radius:20px; padding:4px 14px; font-size:11px; font-weight:700; letter-spacing:0.5px; }
-.gm-title { font-size:18px; font-weight:600; color:var(--text); text-align:center; }
-.gm-desc { font-size:13px; color:var(--text2); text-align:center; line-height:1.6; max-width:300px; margin-top:-4px; }
-.gm-steps { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-s); padding:12px 16px; width:100%; max-width:340px; }
-.gm-step { font-size:12px; color:var(--text2); line-height:1.9; }
-.gm-step b { color:var(--text); }
-.gm-step a { color:var(--accent); text-decoration:none; }
-.gm-input-wrap {
-  position:relative; display:flex; align-items:center;
-  background:var(--surface2); border:1px solid var(--border2);
-  border-radius:var(--radius-s); overflow:hidden; width:100%; max-width:340px;
-  transition:border-color 0.2s;
-}
-.gm-input-wrap:focus-within { border-color:var(--accent); }
-.gm-input {
-  flex:1; background:transparent; border:none; outline:none;
-  padding:14px 44px 14px 16px; font-size:12px; color:var(--text);
-  font-family:var(--fs); letter-spacing:0.5px;
-}
-.gm-input::placeholder { color:var(--text3); }
-.gm-eye { position:absolute; right:12px; font-size:15px; cursor:pointer; color:var(--text3); user-select:none; }
-.gm-save {
-  background:var(--accent); color:#fff; border:none; border-radius:var(--radius-s);
-  padding:14px; font-size:14px; font-weight:600; font-family:var(--fs);
-  cursor:pointer; width:100%; max-width:340px; transition:opacity 0.2s;
-}
-.gm-save:hover { opacity:0.88; }
-.gm-note { font-size:11px; color:var(--text3); text-align:center; }
-
 /* ── CHOICE FLASH ─────────────────────────────────── */
 .choice.selecting { background:rgba(10,132,255,0.1) !important; border-color:rgba(10,132,255,0.5) !important; transform:scale(0.98) translateX(0) !important; }
 
@@ -554,25 +517,6 @@ body { display:flex; flex-direction:column; }
 </style>
 </head>
 <body>
-
-<!-- GROQ KEY MODAL -->
-<div id="groqModal" class="hidden">
-  <div class="gm-logo">ECOS</div>
-  <div class="gm-badge">⚡ GRATIS — zero carta di credito</div>
-  <div class="gm-title">Connetti Groq AI</div>
-  <div class="gm-desc">Groq è gratuito per sempre. Bastano 30 secondi per ottenere la chiave.</div>
-  <div class="gm-steps">
-    <div class="gm-step"><b>1.</b> Vai su <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a></div>
-    <div class="gm-step"><b>2.</b> Registrati con Google o email</div>
-    <div class="gm-step"><b>3.</b> Clicca “Create API Key” e incolla qui sotto</div>
-  </div>
-  <div class="gm-input-wrap">
-    <input class="gm-input" id="groqKeyInput" type="password" placeholder="gsk_..." autocomplete="off" spellcheck="false">
-    <div class="gm-eye" id="groqKeyEye" onclick="toggleGroqVis()">👁</div>
-  </div>
-  <button class="gm-save" id="groqKeySave">Salva e gioca →</button>
-  <div class="gm-note">La chiave viene salvata solo nel tuo browser. Velocità: ~800 token/sec.</div>
-</div>
 
 <!-- LOADING -->
 <div id="loading">
@@ -1407,28 +1351,9 @@ function updateNPC(npc){
 }
 
 // ════════════════════════════════════════════════════════
-// API KEY
+// API KEY — iniettata al build time da GitHub Actions
 // ════════════════════════════════════════════════════════
-// API key rimossa — AI pubblica Pollinations.ai
-function getGroqKey(){ return localStorage.getItem('ecos_groq_key')||''; }
-function setGroqKey(k){ localStorage.setItem('ecos_groq_key',k.trim()); }
-function toggleGroqVis(){
-  const i=document.getElementById('groqKeyInput');
-  i.type=i.type==='password'?'text':'password';
-  document.getElementById('groqKeyEye').textContent=i.type==='password'?'👁':'🙈';
-}
-function showGroqModal(onSave){
-  const m=document.getElementById('groqModal');
-  m.classList.remove('hidden');
-  document.getElementById('groqKeyInput').value=getGroqKey();
-  document.getElementById('groqKeySave').onclick=()=>{
-    const k=document.getElementById('groqKeyInput').value.trim();
-    if(!k.startsWith('gsk_')||k.length<20){showToast('Chiave Groq non valida (deve iniziare con gsk_)','bad');return;}
-    setGroqKey(k);
-    m.classList.add('hidden');
-    if(onSave)onSave();
-  };
-}
+const _AI_KEY='%%GROQ_KEY%%';
 function extractPartialQuote(text){
   const full=text.match(/"quote"\s*:\s*"((?:[^"\\]|\\.)*)"/); 
   if(full)return full[1].replace(/\\"/g,'"').replace(/\\n/g,' ').replace(/\\t/g,' ');
@@ -1441,8 +1366,8 @@ function extractPartialQuote(text){
 // AI ENGINE — Groq (gratuito, rapidissimo)
 // ════════════════════════════════════════════════════════
 async function callClaude(prompt, onQuoteChunk){
-  const key=getGroqKey();
-  if(!key){ showGroqModal(null); throw new Error('no_key'); }
+  const key=_AI_KEY;
+  if(!key||key==='%%GROQ_KEY%%'){showToast('AI non configurata','bad');throw new Error('no_key');}
   const snap=JSON.stringify(Object.fromEntries(Object.entries(G.params).map(([k,p])=>[k,Math.round(p.v)])));
   const histCtx=G.history.map(h=>`T${h.turn}:"${h.choice}"${h.headline?` → ${h.headline}`:''}`).join(' | ')||'nessuna';
   const relCtx=Object.entries(G.npcRels).map(([n,r])=>`${n}(fiducia:${r.trust>0?'+':''}${Math.round(r.trust)})`).join(', ')||'nessuna';
@@ -1490,7 +1415,7 @@ JSON ESATTO:
     })
   });
   if(!res.ok){
-    if(res.status===401){showToast('Chiave Groq non valida ⚡','bad');showGroqModal(null);throw new Error('no_key');}
+    if(res.status===401){showToast('Chiave AI non valida ⚡','bad');throw new Error('no_key');}
     if(res.status===429){showToast('Rate limit Groq — aspetta un momento','bad');throw new Error('ratelimit');}
     throw new Error(res.status);
   }
@@ -1678,15 +1603,8 @@ async function boot(){
   const lo=document.getElementById('loading'); lo.style.opacity='0';
   await new Promise(r=>setTimeout(r,500)); lo.classList.add('hidden');
   const hasSave=loadGame();
-  if(!getGroqKey()){
-    showGroqModal(()=>{
-      if(hasSave&&G.role){restoreGame();}
-      else{document.getElementById('rolesel').classList.remove('hidden');}
-    });
-  } else {
-    if(hasSave&&G.role){restoreGame();}
-    else{document.getElementById('rolesel').classList.remove('hidden');}
-  }
+  if(hasSave&&G.role){restoreGame();}
+  else{document.getElementById('rolesel').classList.remove('hidden');}
   // Init diorama background
   const cv=document.getElementById('diorama'); cv.width=cv.offsetWidth||380;
   initDiorama(); renderParams(); updScores(); updTopBar();
